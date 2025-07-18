@@ -44,9 +44,14 @@ class CenPosPaymentGateway
     /**
      * Getting Verifying Post Token.
      */
-    public function getVerifyingPost(string $email = 's', ?float $amount = 0.00, ?string $token = null, ?string $invoiceNumber = null, ?string $type = null, ?string $address = null, ?string $zipcode = null)
+    public function getVerifyingPost(string $email = 's', ?float $amount = 0.00, ?string $token = null, ?string $invoiceNumber = null, ?string $type = null, ?string $address = null, ?string $zipcode = null, string $method = 'credit_card')
     {
         $this->isAllowPayment();
+
+        $endpoint = match (strtolower($method)) {
+            'ach' => $this->paymentConfiguration['ach_payment_url'],
+            default => $this->paymentConfiguration['payment_url'],
+        };
 
         $payload = [
             'merchant' => $this->paymentConfiguration['cenpos_encrypted_mid'],
@@ -64,7 +69,7 @@ class CenPosPaymentGateway
 
         $response = Http::asForm()
             ->withoutVerifying()
-            ->post($this->paymentConfiguration['payment_url'].'?app=genericcontroller&action=siteVerify', $payload)
+            ->post($endpoint.'?app=genericcontroller&action=siteVerify', $payload)
             ->object();
 
         return $response->Result == 0 ? $response->Data : null;
